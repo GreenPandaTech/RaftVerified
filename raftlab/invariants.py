@@ -12,7 +12,7 @@ the logs actually changed.
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Mapping, Protocol
 
 from .node import LEADER, Entry
 
@@ -63,7 +63,7 @@ class InvariantChecker:
     def _fail(self, invariant: str, detail: str, step: int) -> None:
         raise InvariantViolation(invariant, detail, self.seed, step, self.replay_hint)
 
-    def check(self, nodes: dict[int, NodeView], step: int) -> None:
+    def check(self, nodes: Mapping[int, NodeView], step: int) -> None:
         """Run all invariants against the current cluster state."""
         self.checks_run += 1
         ids = sorted(nodes)
@@ -76,7 +76,7 @@ class InvariantChecker:
 
     # -- Election Safety: at most one leader can be elected in a given term ----
 
-    def _check_election_safety(self, nodes: dict[int, NodeView], ids: list[int], step: int) -> None:
+    def _check_election_safety(self, nodes: Mapping[int, NodeView], ids: list[int], step: int) -> None:
         for i in ids:
             n = nodes[i]
             if n.role == LEADER:
@@ -87,7 +87,7 @@ class InvariantChecker:
 
     # -- Leader Append-Only: a leader never overwrites or deletes its entries --
 
-    def _check_leader_append_only(self, nodes: dict[int, NodeView], ids: list[int], step: int) -> None:
+    def _check_leader_append_only(self, nodes: Mapping[int, NodeView], ids: list[int], step: int) -> None:
         for i in ids:
             n = nodes[i]
             if n.role != LEADER:
@@ -108,7 +108,7 @@ class InvariantChecker:
 
     # -- Log Matching: same index+term => identical entries up to that index ---
 
-    def _check_log_matching(self, nodes: dict[int, NodeView], ids: list[int], step: int) -> None:
+    def _check_log_matching(self, nodes: Mapping[int, NodeView], ids: list[int], step: int) -> None:
         for ai in range(len(ids)):
             for bi in range(ai + 1, len(ids)):
                 a, b = nodes[ids[ai]], nodes[ids[bi]]
@@ -133,7 +133,7 @@ class InvariantChecker:
 
     # -- commit bookkeeping (feeds Leader Completeness + monotonicity) ---------
 
-    def _observe_commits(self, nodes: dict[int, NodeView], ids: list[int], step: int) -> None:
+    def _observe_commits(self, nodes: Mapping[int, NodeView], ids: list[int], step: int) -> None:
         for i in ids:
             n = nodes[i]
             prev = self._prev_commit.get(i, 0)
@@ -153,7 +153,7 @@ class InvariantChecker:
 
     # -- Leader Completeness: committed entries appear in all future leaders ---
 
-    def _check_leader_completeness(self, nodes: dict[int, NodeView], ids: list[int], step: int) -> None:
+    def _check_leader_completeness(self, nodes: Mapping[int, NodeView], ids: list[int], step: int) -> None:
         for i in ids:
             n = nodes[i]
             if n.role != LEADER:
@@ -174,7 +174,7 @@ class InvariantChecker:
 
     # -- State Machine Safety: no two nodes apply different commands at an index
 
-    def _check_state_machine_safety(self, nodes: dict[int, NodeView], ids: list[int], step: int) -> None:
+    def _check_state_machine_safety(self, nodes: Mapping[int, NodeView], ids: list[int], step: int) -> None:
         for i in ids:
             n = nodes[i]
             seen = self._applied_seen.get(i, 0)
